@@ -1,0 +1,3 @@
+interface:
+  display_name: "B站素材下载"
+  short_description: "用 yt-dlp 下载 B 站视频或音频，并按需裁切处理"

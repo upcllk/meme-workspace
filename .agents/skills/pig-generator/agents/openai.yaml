@@ -1,0 +1,3 @@
+interface:
+  display_name: "小猪角色生成"
+  short_description: "自动策划小猪造型，确认提示词后结合参考图生成和换装"

@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"name": "meme-workspace",
+			"path": "."
+		},
+		{
+			"name": "pig-pet-mac",
+			"path": "pig-pet-mac"
+		}
+	],
+	"settings": {
+		"files.exclude": {
+			"**/.DS_Store": true
+		}
+	}
+}

@@ -1,0 +1,6 @@
+# 本机项目仓库软链接
+/pig-pet-mac
+
+# 本地编辑器状态与系统文件
+.DS_Store
+.vscode/
