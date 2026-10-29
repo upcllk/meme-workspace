@@ -12,3 +12,4 @@
 - [视频大笑关键帧的交叉步态](2026-10-28-video-keyframe-laugh-pose.md)：记录表情与站姿衔接问题及待验证的改进。
 
 - [奶蛙改图的修改边界与表情迁移](2026-10-29-naiwa-edit-boundaries.md)：记录改造范围与表情基准混淆，以及通用规则改进。
+- [Windows 上 B 站下载的浏览器登录态读取问题](2026-10-29-bilibili-windows-browser-cookies.md)：记录 Edge 读取失败与 Firefox 登录态下载验证。
