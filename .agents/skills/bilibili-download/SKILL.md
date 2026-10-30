@@ -1,9 +1,9 @@
 ---
 name: bilibili-download
-description: 当用户提供 Bilibili/B 站普通视频、番剧或电影链接，并要求下载视频、音频或整理成项目素材时使用。
+description: 当用户提供 Bilibili/B 站 BV 号、普通视频、番剧或电影链接，并要求下载视频、音频、字幕或整理成项目素材时使用。
 ---
 
-# B 站视频与音频下载
+# B 站视频、音频与字幕下载
 
 使用现有的 `yt-dlp` 下载，使用 `ffmpeg` 合并音视频或做用户明确要求的简单处理。不要为单次下载另造下载器。
 
@@ -19,18 +19,24 @@ description: 当用户提供 Bilibili/B 站普通视频、番剧或电影链接�
 
 ## 默认目录结构
 
-- 普通 BV 视频：`根目录/发布者/发布日期/BV号/标题 [BV号].mp4`。从 `yt-dlp` 元数据取 `uploader`、`upload_date` 和 `id`；日期写成 `YYYY-MM-DD`，不要用下载日期代替。缺失字段应先从视频页面核对；仍无法确定时用明确的“未知发布者”或“未知日期”，不要猜测。
+- 普通 BV 视频：`根目录/发布者/发布日期/标题 [BV号]/标题 [BV号].mp4`。视频所在文件夹使用当前视频的完整标题，末尾追加空格和 `[BV号]`，不再仅用 BV 号命名。从 `yt-dlp` 元数据取 `uploader`、`upload_date`、`title` 和 `id`；日期写成 `YYYY-MM-DD`，不要用下载日期代替。缺失字段应先从视频页面核对；仍无法确定时用明确的“未知发布者”或“未知日期”，不要猜测。
 - 番剧和电影：`根目录/作品名/标题 [ep号].mp4`，只建作品名这一层。优先使用 `yt-dlp` 的 `series` 字段；缺失时从页面核对作品名。此类链接的 `id` 通常是 `ep` 号，不要求另查 BV 号，也不建立日期或编号子目录。
 - 对目录名中的 Windows 禁用字符进行清理，保持原有中文名称；单视频使用 `--no-playlist --no-overwrites --windows-filenames`。若同名文件已存在，先核对，不覆盖。用户明确要求保存到项目时，以项目规则和用户指定位置为准。
+
+## 同步下载字幕
+
+- 下载视频时，默认将可获取的字幕（包括 AI 字幕）保存到视频的同级目录，使用相同的文件名主体和语言后缀。例如 `标题 [BV号].mp4` 对应 `标题 [BV号].ai-zh.srt`。仅下载音频时不默认附带字幕；用户只要字幕时使用 `--skip-download`。
+- 使用 `--write-subs --sub-langs 'all,-danmaku' --convert-subs srt` 下载可用字幕并统一为 SRT，排除弹幕。B 站的 AI 中文字幕以 `ai-zh` 出现在普通字幕列表中，不能只依赖 `--write-auto-subs`；需要检查时用 `--list-subs` 列出实际可用语言。字幕转换需要 `ffmpeg`。
+- 若提示字幕需要登录，沿用用户已明确指定的浏览器登录态；未指定时说明需要登录并询问浏览器。没有字幕或字幕权限不足时继续完成可访问的视频下载，并说明字幕未取得的实际原因；不将空字幕列表直接解释为视频没有 AI 字幕。
 
 ## 常用命令
 
 单视频，先读取元数据并按上述规则确定 `$DEST`，再下载最高可用视频与音频并合并。普通视频的 Windows PowerShell 示例：
 
 ```powershell
-yt-dlp --no-playlist --no-overwrites --windows-filenames -f 'bv*+ba/b' --merge-output-format mp4 -P $DEST -o '%(title)s [%(id)s].%(ext)s' $URL
+yt-dlp --no-playlist --no-overwrites --windows-filenames -f 'bv*+ba/b' --merge-output-format mp4 --write-subs --sub-langs 'all,-danmaku' --convert-subs srt -P $DEST -o '%(title)s [%(id)s].%(ext)s' $URL
 ```
 
 番剧或电影使用相同命令，但将输出模板改为 `'%(title)s [ep%(id)s].%(ext)s'`。仅当用户明确指定的浏览器里已有登录态时，才加入相应的 `--cookies-from-browser firefox` 或其他浏览器名；不要将 Cookie 写入文件。
 
-下载完成后用 `ffprobe` 核对文件是否可读、编码、分辨率、时长和大小；向用户提供实际保存路径，并简要说明可用画质或失败原因。
+下载完成后用 `ffprobe` 核对视频是否可读、编码、分辨率、时长和大小；有字幕时检查其与视频同级、文件非空且包含时间戳和正文。向用户提供视频及字幕的实际保存路径，并简要说明可用画质或失败原因。
