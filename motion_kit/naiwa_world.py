@@ -1096,12 +1096,19 @@ def build_audio(path):
     fade = int(0.4 * SR)
     out[-fade:] *= np.linspace(1, 0, fade)
     out = np.tanh(out * 1.2) * 0.85
-    data = (out * 32767).astype(np.int16)
+    # 立体声微空间扩宽
+    delay_samples = int(0.006 * SR)
+    out_l = out
+    out_r = np.roll(out, delay_samples)
+    out_r[:delay_samples] = 0.0
+    stereo = np.empty((len(out) * 2,), dtype=np.int16)
+    stereo[0::2] = (out_l * 32767).astype(np.int16)
+    stereo[1::2] = (out_r * 32767).astype(np.int16)
     with wave.open(path, "wb") as wf:
-        wf.setnchannels(1)
+        wf.setnchannels(2)
         wf.setsampwidth(2)
         wf.setframerate(SR)
-        wf.writeframes(data.tobytes())
+        wf.writeframes(stereo.tobytes())
 
 
 # ---------------------------------------------------------------- render
