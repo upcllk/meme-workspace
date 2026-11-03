@@ -12,6 +12,8 @@
 
 工作区级 Agent Skills 位于 [`.agents/skills/`](.agents/skills/)，每个角色生成技能使用的图片素材和说明文件都保存在各自的 Skill 文件夹内；项目自身的规则仍以各仓库内的 `AGENTS.md` 为准。
 
+其中 [ChatGPT / Codex 分享导出](.agents/skills/chat-share-export/SKILL.md) 可将公开分享保存为本地 Agent 可读取的 Markdown、JSON 和可访问附件。
+
 工作区根目录暂不维护独立的素材库；项目代码和项目素材保留在各自项目中。
 
 ## 使用
