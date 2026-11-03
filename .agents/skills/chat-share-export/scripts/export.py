@@ -169,6 +169,21 @@ def chat_markdown(data):
     return "\n".join(lines)
 
 
+def item_image_references(item):
+    content = item.get("content")
+    for block in content if isinstance(content, list) else []:
+        if isinstance(block, dict) and block.get("type") == "image":
+            yield block.get("url")
+    key = {"imageView": "url", "imageGeneration": "result"}.get(item.get("type"))
+    if key and item.get(key):
+        yield item[key]
+
+
+def image_markdown(reference, assets):
+    asset = assets.get(reference) if isinstance(reference, str) else None
+    return f"![附件]({asset})" if asset else f"附件未下载：{reference}"
+
+
 def codex_markdown(data, assets):
     lines = [f"# {data.get('title') or 'Codex 分享'}", ""]
     for number, turn in enumerate(data["turns"], 1):
@@ -185,11 +200,12 @@ def codex_markdown(data, assets):
                 if isinstance(block, dict) and block.get("type") == "text":
                     lines += [block.get("text", ""), ""]
                 elif isinstance(block, dict) and block.get("type") == "image":
-                    ref = block.get("url", "")
-                    asset = assets.get(ref)
-                    lines += [f"![附件]({asset})" if asset else f"附件未下载：{ref}", ""]
+                    lines += [image_markdown(block.get("url"), assets), ""]
                 else:
                     lines += ["```json", json.dumps(block, ensure_ascii=False, indent=2), "```", ""]
+            key = {"imageView": "url", "imageGeneration": "result"}.get(kind)
+            if key and item.get(key):
+                lines += [image_markdown(item[key], assets), ""]
             for key in ("text", "summary"):
                 if key in remaining:
                     lines += [str(remaining.pop(key)), ""]
@@ -249,16 +265,16 @@ def export(url, output):
         }
         for turn_number, turn in enumerate(data["turns"], 1):
             for item_number, item in enumerate(turn.get("items", []), 1):
-                content = item.get("content")
-                for block in content if isinstance(content, list) else []:
-                    if not isinstance(block, dict) or block.get("type") != "image":
-                        continue
-                    reference = block.get("url")
+                for reference in item_image_references(item):
                     if not isinstance(reference, str) or reference not in known_references:
+                        reason = ("分享源标记图片不可用"
+                                  if isinstance(reference, str)
+                                  and reference.startswith("codex:shared-image-unavailable")
+                                  else "图片引用未对应到共享附件清单")
                         manifest["attachments"].append({
                             "status": "unresolved", "reference": reference,
                             "location": f"turns[{turn_number}].items[{item_number}]",
-                            "reason": "图片引用未对应到共享附件清单",
+                            "reason": reason,
                         })
         markdown = codex_markdown(data, assets)
     else:

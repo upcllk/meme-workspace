@@ -63,6 +63,9 @@ class ExportTests(unittest.TestCase):
                     {"type": "userMessage", "content": [
                         {"type": "text", "text": "hello"},
                         {"type": "image", "url": "codex:shared-asset/asset-1"}]},
+                    {"type": "imageView", "url": "codex:shared-asset/asset-1"},
+                    {"type": "imageGeneration", "status": "completed",
+                     "result": "codex:shared-asset/asset-1"},
                     {"type": "fileChange", "changes": [{"path": "file.txt"}], "content": "full diff"}]}]}
 
         def fake_fetch(target, allow_assets=False):
@@ -79,7 +82,8 @@ class ExportTests(unittest.TestCase):
             self.assertEqual(json.loads((dest / "source.json").read_text()), data)
             self.assertEqual((dest / "attachments/asset-1.jpg").read_bytes(), b"image bytes")
             markdown = (dest / "conversation.md").read_text()
-            self.assertIn("![附件](attachments/asset-1.jpg)", markdown)
+            self.assertEqual(markdown.count("![附件](attachments/asset-1.jpg)"), 3)
+            self.assertIn('"result": "codex:shared-asset/asset-1"', markdown)
             self.assertIn("file.txt", markdown)
             self.assertIn('"content": "full diff"', markdown)
             self.assertTrue(result["warnings"])
@@ -88,11 +92,15 @@ class ExportTests(unittest.TestCase):
 
     def test_unlisted_image_is_reported(self):
         data = {"assets": {}, "turns": [{"items": [
-            {"type": "userMessage", "content": [{"type": "image", "url": "unknown"}]}]}]}
+            {"type": "userMessage", "content": [{"type": "image", "url": "unknown"}]},
+            {"type": "imageView", "url": "codex:shared-asset/missing"},
+            {"type": "imageGeneration", "result": "codex:shared-image-unavailable/1"},
+            {"type": "imageGeneration", "status": "pending", "result": None}]}]}
         with tempfile.TemporaryDirectory() as temp, patch.object(
                 exporter, "fetch", return_value=(json.dumps(data).encode(), "application/json")):
             result = exporter.export("https://chatgpt.com/s/cx_test", Path(temp) / "output")
-            self.assertEqual(result["attachments"][0]["status"], "unresolved")
+            self.assertEqual([x["status"] for x in result["attachments"]], ["unresolved"] * 3)
+            self.assertEqual(result["attachments"][2]["reason"], "分享源标记图片不可用")
             self.assertTrue(result["warnings"])
 
 
